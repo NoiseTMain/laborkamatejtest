@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LabApp</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* =========================================
+           1. ZÁKLADNÍ STYLY A PROMĚNNÉ (CSS)
+           ========================================= */
+        :root {
+            --bg-color: #0b0b0b;
+            --surface-color: #1a1a1a;
+            --surface-light: #262626;
+            --primary-color: #00d2ff;
+            --primary-dark: #3a7bd5;
+            --accent-color: #00e676;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --danger: #ff4c4c;
+            --nav-height: 75px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Hlavní kontejner aplikace s imitací mobilního rozhraní */
+        #app {
+            width: 100%;
+            max-width: 450px;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+        }
+
+        /* Definice jednotlivých obrazovek */
+        .view {
+            display: none;
+            padding: 25px;
+            padding-bottom: calc(var(--nav-height) + 40px);
+            flex: 1;
+            overflow-y: auto;
+            animation: fadeInView 0.4s ease-out;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeInView {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Typografie */
+        h1 { font-size: 2.4em; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; }
+        h2 { font-size: 1.6em; margin-bottom: 20px; font-weight: 600; }
+        h3 { font-size: 1.05em; margin-bottom: 15px; color: var(--primary-color); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Formulářové prvky a tlačítka */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.75em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            margin-left: 5px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--surface-light);
+            border: 1px solid #333;
+            color: white;
+            border-radius: 14px;
+            font-size: 1em;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-control:focus {
+            border-color: var(--primary-color);
+            background-color: #2d2d2d;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 14px;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-action:active {
+            transform: scale(0.98);
+        }
+
+        .btn-main {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+            color: white;
+            box-shadow: 0 4px 15px rgba(58, 123, 213, 0.4);
+        }
+
+        .btn-ghost {
+            background-color: var(--surface-light);
+            color: var(--text-main);
+            border: 1px solid #333;
+        }
+
+        .btn-lock {
+            background-color: #2a2a2a;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        .btn-remove {
+            background-color: rgba(255, 76, 76, 0.15);
+            color: var(--danger);
+            width: auto;
+            padding: 10px 15px;
+            font-size: 0.9em;
+        }
+
+        /* Karty se statistikami */
+        .dashboard-card {
+            background: var(--surface-color);
+            padding: 25px;
+            border-radius: 24px;
+            margin-bottom: 20px;
+            border: 1px solid #2a2a2a;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .money-display {
+            font-size: 2.6em;
+            font-weight: 800;
+            color: var(--accent-color);
+            font-family: 'monospace';
+            margin: 10px 0;
+        }
+
+        .lock-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(255, 76, 76, 0.1);
+            color: var(--danger);
+            border-radius: 30px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* Styl dokumentu Smlouvy (NDA) */
+        .document-paper {
+            background-color: #181818;
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary-color);
+            line-height: 1.7;
+            color: #ccc;
+            font-size: 0.92em;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .doc-h {
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-top: 20px;
+            display: block;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        /* E-shop a Produkty */
+        .product-box {
+            background: var(--surface-color);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            border: 1px solid #222;
+            transition: border-color 0.3s;
+        }
+
+        .product-box:hover {
+            border-color: #444;
+        }
+
+        .img-container {
+            width: 100%;
+            height: 200px;
+            background-color: #333;
+            overflow: hidden;
+        }
+
+        .img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .product-body {
+            padding: 20px;
+        }
+
+        .price-tag {
+            font-size: 1.4em;
+            color: var(--accent-color);
+            font-weight: 800;
+            margin-bottom: 15px;
+        }
+
+        /* Košík položky */
+        .cart-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px;
+            background: var(--surface-light);
+            border-radius: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #333;
+        }
+
+        /* Chat systém */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 450px;
+            background: #0f0f0f;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #222;
+        }
+
+        .messages-flow {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-right: 5px;
+        }
+
+        .bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.9em;
+            max-width: 85%;
+            line-height: 1.4;
+        }
+
+        .bubble-bot {
+            background: var(--surface-light);
+            color: #ddd;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .bubble-user {
+            background: var(--primary-dark);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* Spodní Navigační Menu */
+        #main-navigation {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 450px;
+            height: var(--nav-height);
+            background: rgba(20, 20, 20, 0.92);
+            backdrop-filter: blur(20px);
+            display: none; /* Zobrazí se až po přihlášení */
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #222;
+            z-index: 9999;
+        }
+
+        .nav-btn {
+            flex: 1;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.7em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            padding: 10px 0;
+        }
+
+        .nav-btn i {
+            display: block;
+            font-size: 1.6em; /* Větší ikony */
+            margin-bottom: 6px;
+        }
+
+        .nav-btn.active {
+            color: var(--primary-color);
+        }
+
+        .nav-btn.active::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            right: 20%;
+            height: 3px;
+            background: var(--primary-color);
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+        }
+
+        .cart-badge-count {
+            position: absolute;
+            top: 2px;
+            right: 22%;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* Úpravy pro grafy */
+        canvas {
+            margin-top: 15px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 15px;
+            padding: 10px;
+        }
+
+        /* =========================================
+           NOVÉ STYLY PRO MODAL DORUČOVACÍ ADRESY
+           ========================================= */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--surface-color);
+            width: 90%;
+            max-width: 400px;
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid var(--primary-color);
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 10px;
+            font-size: 1.4em;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-disabled {
+            background: #333 !important;
+            color: #777 !important;
+            cursor: not-allowed !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    
+    <div id="view-auth" class="view active">
+        <div style="text-align: center; margin: 70px 0 40px 0;">
+            <div style="width: 90px; height: 90px; background: linear-gradient(135deg, #3a7bd5, #00d2ff); border-radius: 25px; display: flex; justify-content: center; align-items: center; margin: 0 auto 25px auto; box-shadow: 0 10px 25px rgba(0,210,255,0.3);">
+                <i class="fa-solid fa-flask-vial" style="font-size: 3em; color: white;"></i>
+            </div>
+            <h1>LAB APP</h1>
+            <p style="color: var(--text-muted); font-weight: 500;">Oficiální terminál Laboratory B.V.</p>
+        </div>
+
+        <div id="auth-msg-box" style="display: none; padding: 15px; border-radius: 12px; background: rgba(255,76,76,0.1); color: var(--danger); font-size: 0.9em; margin-bottom: 20px; text-align: center; border: 1px solid var(--danger);"></div>
+
+        <div class="form-group">
+            <span class="form-label">Telefonní číslo</span>
+            <input type="tel" id="auth-phone" class="input-control" placeholder="+420 000 000 000">
+        </div>
+        
+        <div class="form-group">
+            <span class="form-label">Přístupové heslo</span>
+            <input type="password" id="auth-pass" class="input-control" placeholder="••••••••">
+        </div>
+
+        <button class="btn-action btn-main" onclick="executeLogin()">
+            <i class="fa-solid fa-right-to-bracket"></i> PŘIHLÁSIT SE
+        </button>
+        
+        <button class="btn-action btn-ghost" onclick="executeRegister()">
+            VYTVOŘIT NOVÝ ÚČET
+        </button>
+        
+        <p style="text-align: center; font-size: 0.72em; color: #444; margin-top: 50px; line-height: 1.5; padding: 0 20px;">
+            Přihlášením potvrzujete, že jste vázáni dohodou o mlčenlivosti (NDA) a pravidly Laboratory B.V. Nizozemsko.
+        </p>
+    </div>
+
+    <div id="view-dashboard" class="view">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <div>
+                <p style="color: var(--text-muted); font-size: 0.8em; font-weight: bold;">VÍTEJTE ZPĚT</p>
+                <h2 style="margin-bottom: 0;">Matěji</h2>
+            </div>
+            <div onclick="executeLogout()" style="width: 45px; height: 45px; background: var(--surface-light); border-radius: 12px; display: flex; justify-content: center; align-items: center; color: var(--danger); cursor: pointer;">
+                <i class="fa-solid fa-power-off"></i>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <p style="color: var(--text-muted); font-size: 0.85em; font-weight: bold;">AKTUÁLNÍ GENERLOVANÝ VÝDĚLEK</p>
+            <div class="money-display"><span id="realtime-cash">0.00</span> Kč</div>
+            
+            <button class="btn-action btn-lock" style="margin-top: 15px;" onclick="triggerLockAlert()">
+                <i class="fa-solid fa-hand-holding-dollar"></i> VYZVEDNOUT VÝDĚLEK
+            </button>
+            
+            <div class="lock-indicator">
+                <i class="fa-solid fa-lock"></i> SMLUVNÍ BLOKACE: ZBÝVÁ <span id="days-countdown">1095</span> DNÍ
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+            <div class="dashboard-card" style="padding: 20px; margin-bottom: 0;">
+                <p style="font-size: 0.7em; color: var(--text-muted); font-weight: bold;">VÁŠ PODÍL</p>
+                <div style="font-size: 1.6em; font-weight: 800; color: var(--primary-color); margin-top: 5px;">10 %</div>
+            </div>
+            <div class="dashboard-card" style="padding: 20px; margin-bottom: 0;">
+                <p style="font-size: 0.7em; color: var(--text-muted); font-weight: bold;">AKTIVNÍ DNY</p>
+                <div style="font-size: 1.6em; font-weight: 800; color: white; margin-top: 5px;" id="stat-active-days">0</div>
+            </div>
+        </div>
+
+        <h3>Vývoj tržní ceny akcií (€)</h3>
+        <canvas id="chart-market"></canvas>
+
+        <h3 style="margin-top: 30px;">Historie vašeho zhodnocení</h3>
+        <canvas id="chart-user-growth"></canvas>
+    </div>
+
+    <div id="view-nda" class="view">
+        <h2 style="display: flex; align-items: center; gap: 12px;">
+            <i class="fa-solid fa-file-shield" style="color: var(--primary-color);"></i> Naše domluva
+        </h2>
+        
+        <div class="document-paper">
+            <p style="text-align: center; font-weight: 900; color: white; letter-spacing: 1px; margin-bottom: 5px;">NON-DISCLOSURE AGREEMENT</p>
+            <p style="font-size: 0.75em; text-align: center; margin-bottom: 20px; color: var(--text-muted);">Smluvní strana: Laboratory B.V., Netherlands</p>
+            
+            <span class="doc-h">ČLÁNEK I. - OCHRANA TAJEMSTVÍ</span>
+            Uživatel se zavazuje k naprosté mlčenlivosti ohledně laboratorních postupů, složení vzorků a interních dat zobrazených v této aplikaci. Jakékoli sdílení (včetně screenshotů) je přísně zakázáno.
+            
+            <span class="doc-h">ČLÁNEK II. - FINANČNÍ PODMÍNKY</span>
+            Zisky jsou generovány na základě držení akciových podílů. Vzhledem k investičnímu cyklu laboratoře jsou tyto prostředky splatné až po ukončení řádného smluvního období.
+            
+            <span class="doc-h">ČLÁNEK III. - DOBA TRVÁNÍ</span>
+            Tato dohoda a s ní spojená blokace prostředků je sjednána na dobu <strong>1095 dní (3 roky)</strong> od okamžiku elektronického podpisu (registrace).
+
+            <span class="doc-h">ČLÁNEK IV. - DEPOSIT</span>
+            Tento dokument slouží jako oficiální potvrzení o přijetí vkladu ve výši <strong>340 EUR</strong> od zaměstnance. Vklad je držen v souladu s pracovními podmínkami a interními předpisy NDA Laboratoře. Tuto částku lze použít k pokrytí případných škod, ztrát nebo závazků vzniklých v průběhu pracovního poměruPo řádném ukončení pracovního poměru a splnění všech závazků bude vklad vrácen v plné výši pokud nebudou vyžadovány žádné srážky. 
+            
+            <span class="doc-h">ČLÁNEK V. - JURISDIKCE</span>
+            Veškeré spory spadají pod jurisdikci obchodního práva Nizozemského království se spolupráci s Justicí v zázemí kde byla smlouva podepsána.
+            
+            <div style="margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; font-size: 0.8em; font-style: italic;">
+                Podepsáno digitálně dne: <span id="nda-sign-date" style="color: white; font-weight: bold;">--.--.----</span><br>
+                Status smlouvy: <span style="color: var(--accent-color); font-weight: bold;">AKTIVNÍ / PLATNÁ</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-shop" class="view">
+        <h2>Laboratorní Produkty</h2>
+        <div id="shop-items-grid">
+            </div>
+    </div>
+
+    <div id="view-cart" class="view">
+        <h2>Váš nákupní košík</h2>
+        <h2>Minimalní hodnota košíku pro doručení je 205€ 💶</h2>
+        
+        <div id="cart-items-list">
+            </div>
+        
+        <div id="cart-address-container" style="display: none; margin-top: 20px;"></div>
+
+        <div id="cart-checkout-area" style="display: none; margin-top: 40px;">
+            <div style="display: flex; justify-content: space-between; font-size: 1.4em; font-weight: 800; margin-bottom: 25px; padding: 0 10px;">
+                <span>CELKEM:</span>
+                <span style="color: var(--accent-color);"><span id="cart-final-sum">0</span> Kč</span>
+            </div>
+            <button class="btn-action btn-main" onclick="processOrderCheckout()">
+                ODESLAT OBJEDNÁVKU KE ZPRACOVÁNÍ
+            </button>
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.75em; margin-top: 15px;">
+                Doba doručení: 14 - 28 pracovních dnů.
+            </p>
+        </div>
+    </div>
+
+    <div id="view-orders" class="view">
+        <h2 style="display: flex; align-items: center; gap: 12px;">
+            <i class="fa-solid fa-box-open" style="color: var(--primary-color);"></i> Vaše Objednávky
+        </h2>
+        <div id="orders-list-container">
+            </div>
+    </div>
+
+    <div id="view-support" class="view">
+        <h2>Technická Podpora</h2>
+        <div class="chat-container">
+            <div class="messages-flow" id="support-chat-box">
+                <div class="bubble bubble-bot">
+                    Dobrý den. Jsem váš asistent Laboratory B.V. Pokud máte dotazy ohledně vašich akcií nebo čehokoliv jiného, napište nám níže.
+                </div>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="support-msg-input" class="input-control" style="margin-bottom: 0;" placeholder="Napište vaši zprávu...">
+            <button class="btn-action btn-main" style="width: 65px; margin-bottom: 0;" onclick="sendSupportMessage()">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="main-navigation">
+        <div class="nav-btn active" onclick="changeTab('dashboard')">
+            <i class="fa-solid fa-chart-line"></i>Domů
+        </div>
+        <div class="nav-btn" onclick="changeTab('nda')">
+            <i class="fa-solid fa-shield-halved"></i>Smlouva
+        </div>
+        <div class="nav-btn" onclick="changeTab('shop')">
+            <i class="fa-solid fa-flask"></i>E-shop
+        </div>
+        <div class="nav-btn" onclick="changeTab('cart')">
+            <i class="fa-solid fa-cart-shopping"></i>Košík
+            <span class="cart-badge-count" id="ui-cart-badge">0</span>
+        </div>
+        <div class="nav-btn" onclick="changeTab('orders')">
+            <i class="fa-solid fa-box-open"></i>Objednávky
+        </div>
+        <div class="nav-btn" onclick="changeTab('support')">
+            <i class="fa-solid fa-headset"></i>Podpora
+        </div>
+    </div>
+
+    <div id="address-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2><i class="fa-solid fa-map-location-dot" style="color: var(--primary-color);"></i> Doručovací adresa</h2>
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.8em; margin-bottom: 20px;">
+                Tato adresa bude pevně spjata s vaším účtem a nelze ji později změnit.
+            </p>
+            <input type="hidden" id="addr-phone">
+            
+            <div class="form-group" style="margin-bottom: 12px;">
+                <span class="form-label">Jméno a příjmení *</span>
+                <input type="text" id="addr-name" class="input-control" placeholder="Např. Jan Novák">
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <span class="form-label">Ulice a č.p. *</span>
+                <input type="text" id="addr-street" class="input-control" placeholder="Např. Laboratorní 123">
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px; margin-bottom: 12px;">
+                <div style="flex: 2;">
+                    <span class="form-label">Město *</span>
+                    <input type="text" id="addr-city" class="input-control" placeholder="Např. Praha">
+                </div>
+                <div style="flex: 1;">
+                    <span class="form-label">PSČ *</span>
+                    <input type="text" id="addr-zip" class="input-control" placeholder="10000">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 25px;">
+                <span class="form-label">Stát (volitelné)</span>
+                <input type="text" id="addr-country" class="input-control" value="Česká republika">
+            </div>
+
+            <button id="btn-save-address" class="btn-action btn-main btn-disabled" onclick="saveUserAddress()" disabled>
+                <i class="fa-solid fa-floppy-disk"></i> ULOŽIT ADRESU
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- Globální proměnné a stav ---
+    let activeUser = null;
+    let inventory = [
+        { id: 1, name: "THC 15% Full-Spectrum Ice Cherry🍒 1G", price: 28, image: "https://images.unsplash.com/photo-1770192234700-762ddefa59a9?q=80&w=600" },
+        { id: 2, name: "THC 15% Full-Spectrum Orange🍊 1G", price: 28, image: "https://images.unsplash.com/photo-1774288904168-9a593abb0ff8?q=80&w=600" },
+        { id: 3, name: "Organický extrakt THC 18% 100ml", price: 2450, image: "https://images.unsplash.com/photo-1493101382455-cf11ffa65f45?q=80&w=600" },
+        { id: 4, name: "CUSTOM THC PŘES MANAGERA (CENA ZA GRAM)", price: 33, image: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=600" }
+    ];
+    let userCart = [];
+    let statsUpdateInterval = null;
+    const CONTRACT_DURATION = 1095; // 3 roky v dnech
+
+    /* --- Funkce: Registrace uživatele --- */
+    function executeRegister() {
+        const phone = document.getElementById('auth-phone').value.trim();
+        const pass = document.getElementById('auth-pass').value.trim();
+        
+        if (phone.length < 9 || pass.length < 4) {
+            return displayAuthError("Zadejte platné údaje pro registraci.");
+        }
+
+        let database = JSON.parse(localStorage.getItem('lab_system_users') || '{}');
+        if (database[phone]) {
+            return displayAuthError("Tento uživatel již existuje.");
+        }
+
+        // Uložení nového uživatele s datem registrace (start smlouvy)
+        database[phone] = {
+            password: pass,
+            registeredAt: Date.now()
+        };
+        localStorage.setItem('lab_system_users', JSON.stringify(database));
+        alert("Registrace úspěšná! Nyní se přihlaste.");
+        
+        // UPRAVENO: Ihned po registraci se vyvolá povinné nastavení adresy
+        openAddressModal(phone);
+    }
+
+    /* --- Funkce: Přihlášení uživatele --- */
+    function executeLogin() {
+        const phone = document.getElementById('auth-phone').value.trim();
+        const pass = document.getElementById('auth-pass').value.trim();
+        
+        let database = JSON.parse(localStorage.getItem('lab_system_users') || '{}');
+        
+        if (database[phone] && database[phone].password === pass) {
+            activeUser = {
+                phone: phone,
+                registeredAt: database[phone].registeredAt
+            };
+            localStorage.setItem('lab_active_session', JSON.stringify(activeUser));
+            bootApp();
+        } else {
+            displayAuthError("Chybné telefonní číslo nebo heslo.");
+        }
+    }
+
+    function displayAuthError(msg) {
+        const box = document.getElementById('auth-msg-box');
+        box.textContent = msg;
+        box.style.display = 'block';
+        setTimeout(() => box.style.display = 'none', 4000);
+    }
+
+    /* --- Funkce: Spuštění aplikace po loginu --- */
+    function bootApp() {
+        // Přepnutí UI
+        document.getElementById('view-auth').classList.remove('active');
+        document.getElementById('view-dashboard').classList.add('active');
+        document.getElementById('main-navigation').style.display = 'flex';
+        
+        // Nastavení data ve smlouvě
+        const regDate = new Date(activeUser.registeredAt);
+        document.getElementById('nda-sign-date').textContent = regDate.toLocaleDateString('cs-CZ');
+
+        // Inicializace komponent
+        renderShopProducts();
+        setupCharts();
+        
+        // Spuštění real-time počitadla
+        refreshFinancials();
+        statsUpdateInterval = setInterval(refreshFinancials, 1000);
+
+        // NOVÉ - Vyžádání povolení pro notifikace při spuštění aplikace
+        if ("Notification" in window) {
+            Notification.requestPermission();
+        }
+    }
+
+    /* --- Funkce: Real-time výpočet výdělku a času --- */
+    function refreshFinancials() {
+        if (!activeUser) return;
+
+        const now = Date.now();
+        const elapsedMs = now - activeUser.registeredAt;
+        const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
+        
+        // LOGIKA VÝDĚLKU: Základ 500 Kč + 150 Kč za každý uplynulý den
+        const currentTotal = 100 + (elapsedDays * 150);
+        
+        document.getElementById('realtime-cash').textContent = currentTotal.toLocaleString('cs-CZ', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        // Dny ve smlouvě
+        const daysPassed = Math.floor(elapsedDays);
+        document.getElementById('stat-active-days').textContent = daysPassed;
+
+        // Odpočet do konce 3 let
+        const remaining = CONTRACT_DURATION - daysPassed;
+        document.getElementById('days-countdown').textContent = remaining > 0 ? remaining : 0;
+    }
+
+    /* --- Funkce: Upozornění na zámek --- */
+    function triggerLockAlert() {
+        const elapsedDays = (Date.now() - activeUser.registeredAt) / (1000 * 60 * 60 * 24);
+        const rem = Math.floor(CONTRACT_DURATION - elapsedDays);
+        
+        alert("PŘÍSTUP ZAMÍTNUT:\n\nVaše nashromážděné prostředky jsou v souladu s Článkem II. Smlouvy o mlčenlivosti (NDA) blokovány.\n\nUkončení inkubační doby a uvolnění výplaty proběhne za: " + rem + " dní.");
+    }
+
+    /* --- Funkce: Navigace mezi kartami --- */
+    function changeTab(target) {
+        // Skrýt vše
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        // Zobrazit cíl
+        document.getElementById('view-' + target).classList.add('active');
+
+        // Update menu stylů
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        // Pokud jdeme do košíku, vykreslit ho
+        if (target === 'cart') renderCartItems();
+    }
+
+    /* --- Funkce: E-shop a Košík --- */
+    function renderShopProducts() {
+        const grid = document.getElementById('shop-items-grid');
+        grid.innerHTML = "";
+
+        inventory.forEach(p => {
+            const el = document.createElement('div');
+            el.className = "product-box";
+            el.innerHTML = `
+                <div class="img-container"><img src="${p.image}"></div>
+                <div class="product-body">
+                    <strong style="font-size: 1.1em; display: block; margin-bottom: 5px;">${p.name}</strong>
+                    <div class="price-tag">${p.price} Kč</div>
+                    <button class="btn-action btn-main" onclick="addItemToCart(${p.id})">
+                        <i class="fa-solid fa-cart-plus"></i> DO KOŠÍKU
+                    </button>
+                </div>
+            `;
+            grid.appendChild(el);
+        });
+    }
+
+    function addItemToCart(id) {
+        const item = inventory.find(i => i.id === id);
+        userCart.push(item);
+        
+        const badge = document.getElementById('ui-cart-badge');
+        badge.style.display = 'flex';
+        badge.textContent = userCart.length;
+
+        // Krátký efekt na tlačítku
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "PŘIDÁNO ✓";
+        btn.style.background = "var(--accent-color)";
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.background = "";
+        }, 800);
+    }
+
+    function renderCartItems() {
+        const list = document.getElementById('cart-items-list');
+        const area = document.getElementById('cart-checkout-area');
+        list.innerHTML = "";
+
+        if (userCart.length === 0) {
+            list.innerHTML = `<div style="text-align:center; padding: 50px 0; color: #444;">
+                <i class="fa-solid fa-basket-shopping" style="font-size: 4em; margin-bottom: 15px;"></i><br>
+                Váš košík je zatím prázdný.
+            </div>`;
+            area.style.display = 'none';
+            return;
+        }
+
+        let total = 0;
+        userCart.forEach((item, index) => {
+            total += item.price;
+            const row = document.createElement('div');
+            row.className = "cart-item-row";
+            row.innerHTML = `
+                <div>
+                    <strong>${item.name}</strong><br>
+                    <span style="color: var(--accent-color); font-weight: bold;">${item.price} Kč</span>
+                </div>
+                <button class="btn-action btn-remove" onclick="deleteItemFromCart(${index})">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            `;
+            list.appendChild(row);
+        });
+
+        document.getElementById('cart-final-sum').textContent = total.toLocaleString('cs-CZ');
+        area.style.display = 'block';
+    }
+
+    function deleteItemFromCart(idx) {
+        userCart.splice(idx, 1);
+        renderCartItems();
+        const badge = document.getElementById('ui-cart-badge');
+        badge.textContent = userCart.length;
+        if (userCart.length === 0) badge.style.display = 'none';
+    }
+
+    function processOrderCheckout() {
+        alert("OBJEDNÁVKA ÚSPĚŠNÁ:\nVaše požadavky byly předány logistickému oddělení Laboratory B.V.\nPlatbu proveďte přes našeho zástupce v ČR. PAYPAL[F&F PLATBA]: lbrm8169@gmail.com (na tento email pošlete potvrzení o platbě).");
+        userCart = [];
+        document.getElementById('ui-cart-badge').style.display = 'none';
+        changeTab('dashboard');
+    }
+
+    // NOVÉ - Funkce pro zobrazení browser notifikace
+    function showNotification(title, body) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, {
+                body: body,
+                icon: "https://cdn-icons-png.flaticon.com/512/4712/4712027.png"
+            });
+        }
+    }
+
+    /* --- Funkce: Podpora a Chat --- */
+    function sendSupportMessage() {
+        const input = document.getElementById('support-msg-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const chat = document.getElementById('support-chat-box');
+        
+        // Zpráva od uživatele
+        const uBubble = document.createElement('div');
+        uBubble.className = "bubble bubble-user";
+        uBubble.textContent = text;
+        chat.appendChild(uBubble);
+
+        input.value = "";
+        chat.scrollTop = chat.scrollHeight;
+
+        // Automatická odpověď (simulace)
+        setTimeout(() => {
+            const bBubble = document.createElement('div');
+            bBubble.className = "bubble bubble-bot";
+            bBubble.innerHTML = "Děkujeme. Vaše zpráva byla poslána naším managerům'. Budeme vás kontaktovat přímo v aplikaci.";
+            chat.appendChild(bBubble);
+            chat.scrollTop = chat.scrollHeight;
+        }, 1200);
+
+        // NOVÉ - Druhá automatická odpověď po 5 minutách s notifikací
+        setTimeout(() => {
+            const bBubble2 = document.createElement('div');
+            bBubble2.className = "bubble bubble-bot";
+            bBubble2.innerHTML = "Omlouváme se za zdržení, náš specialista z podpory se vám na to kouknul, chtěli by jsme Vás před doručením zásilky vaší loajalitu k nám. Tím že uděláte svůj první nákup zde v aplikaci. Jelikož už máte od Managera 100G CHERRY THC za odměnu je pro Vás vyhodnější zakopit náš Organický extrakt s 18% THC, zamozdřejmě pro Vás platí podmínky v košíku 😌 Děkujeme Matěji za zpětnou vazbu v případě dalšich dotazů nás neváhejte kontaktovat zde🤝";
+            chat.appendChild(bBubble2);
+            chat.scrollTop = chat.scrollHeight;
+            
+            showNotification("Nová zpráva z podpory", "Máte novou odpověď v chatu");
+        }, 5 * 60 * 1000);
+    }
+
+    /* --- Funkce: Nastavení grafů (Chart.js) --- */
+    function setupCharts() {
+        // Graf 1: Tržní cena
+        new Chart(document.getElementById('chart-market').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen'],
+                datasets: [{
+                    label: 'Kurz v €',
+                    data: [120, 180, 160, 240, 310, 395],
+                    borderColor: '#00d2ff',
+                    borderWidth: 3,
+                    pointRadius: 0,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(0, 210, 255, 0.1)'
+                }]
+            },
+            options: { plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#222' } } } }
+        });
+
+        // Graf 2: Uživatelský růst
+        new Chart(document.getElementById('chart-user-growth').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Týden 1', 'Týden 2', 'Týden 3', 'Týden 4'],
+                datasets: [{
+                    data: [1200, 2800, 4100, 5600],
+                    backgroundColor: '#00e676',
+                    borderRadius: 8
+                }]
+            },
+            options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false } } }
+        });
+    }
+
+    /* --- Funkce: Odhlášení --- */
+    function executeLogout() {
+        clearInterval(statsUpdateInterval);
+        localStorage.removeItem('lab_active_session');
+        location.reload();
+    }
+
+    // --- Kontrola sezení při načtení ---
+    window.onload = () => {
+        const session = localStorage.getItem('lab_active_session');
+        if (session) {
+            activeUser = JSON.parse(session);
+            bootApp();
+        }
+    };
+
+    /* =========================================================================
+       NOVÁ SEKCE KÓDU PRO OBSLUHU OBJEDNÁVEK 
+       (přidáno bez úprav stávajících funkcí - využití zachytávání)
+       ========================================================================= */
+    let userOrderHistory = [];
+
+    // Funkce pro vykreslení historie objednávek na nové záložce
+    function renderOrderHistory() {
+        const container = document.getElementById('orders-list-container');
+        if (!container) return;
+
+        if (userOrderHistory.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: var(--text-muted); padding: 50px 0;">
+                    <i class="fa-solid fa-box-open" style="font-size: 4em; margin-bottom: 20px; color: #333;"></i><br>
+                    Nemáte žádné aktivní ani minulé objednávky.
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = "";
+        
+        // Zobrazení objednávek od nejnovější
+        const reversedHistory = [...userOrderHistory].reverse();
+
+        reversedHistory.forEach(order => {
+            const dateStr = new Date(order.date).toLocaleDateString('cs-CZ') + ' ' + new Date(order.date).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'});
+            
+            let itemsHtml = '';
+            order.items.forEach(item => {
+                itemsHtml += `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.9em; border-bottom: 1px solid #2a2a2a; padding-bottom: 8px;">
+                        <span><strong style="color: var(--primary-color);">${item.quantity}x</strong> ${item.name}</span>
+                        <span style="font-weight: bold;">${(item.price * item.quantity).toLocaleString('cs-CZ')} Kč</span>
+                    </div>
+                `;
+            });
+
+            const card = document.createElement('div');
+            card.className = "dashboard-card";
+            card.style.padding = "20px";
+            card.style.borderLeft = "4px solid var(--primary-color)";
+            
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                    <span style="color: var(--text-muted); font-size: 0.8em;"><strong>ID Obj:</strong> #${order.id}</span>
+                    <span style="font-size: 0.8em;">${dateStr}</span>
+                </div>
+                
+                <h3 style="font-size: 0.85em; margin-bottom: 15px; color: var(--text-muted);">1. PŘEHLED OBJEDNÁVKY</h3>
+                <div style="margin-bottom: 25px;">
+                    ${itemsHtml}
+                    <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 1.1em; font-weight: 800;">
+                        <span>CELKEM:</span>
+                        <span style="color: var(--accent-color);">${order.total.toLocaleString('cs-CZ')} Kč</span>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 0.85em; margin-bottom: 10px; color: var(--text-muted);">2. INFORMACE O DORUČENÍ</h3>
+                <div style="background: rgba(0, 230, 118, 0.1); color: var(--accent-color); padding: 15px; border-radius: 12px; margin-bottom: 25px; font-size: 0.85em; display: flex; align-items: center; gap: 15px;">
+                    <i class="fa-solid fa-truck-fast" style="font-size: 1.6em;"></i>
+                    <span style="line-height: 1.4;"><strong>Odhad doručení:</strong><br>14–28 dní od data objednání</span>
+                </div>
+
+                <h3 style="font-size: 0.85em; margin-bottom: 10px; color: var(--text-muted);">3. INFORMACE K PLATBĚ</h3>
+                <div style="background: var(--surface-light); padding: 15px; border-radius: 12px; border: 1px solid #333; font-size: 0.85em; line-height: 1.6;">
+                    <p style="margin-bottom: 10px; color: var(--text-main);">Platba probíhá převodem přes zástupce v ČR.</p>
+                    <p><strong>Metoda:</strong> PayPal (F&F platba)</p>
+                    <p><strong>E-mail pro platbu:</strong> <span style="color: var(--primary-color);">lbrm8169@gmail.com</span></p>
+                    <p style="margin-top: 12px; color: var(--text-muted); font-size: 0.9em; padding-top: 10px; border-top: 1px dashed #444;">
+                        <em>Po provedení úhrady prosím zašlete na výše uvedený e-mail potvrzení o platbě. To umožní okamžité spárování a urychlí expedici.</em>
+                    </p>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // Hook na původní bootApp pro načtení uložených objednávek ze Storage
+    const originalBootAppFunc = bootApp;
+    bootApp = function() {
+        originalBootAppFunc(); // Zavolání původního kódu
+        
+        const savedHistory = localStorage.getItem('lab_user_orders_' + activeUser.phone);
+        userOrderHistory = savedHistory ? JSON.parse(savedHistory) : [];
+        renderOrderHistory();
+    };
+
+    // Hook na původní processOrderCheckout pro uložení objednávky PŘED smazáním košíku
+    const originalProcessOrderCheckoutFunc = processOrderCheckout;
+    processOrderCheckout = function() {
+        if (userCart && userCart.length > 0) {
+            // Seskupení stejných produktů pro zjištění množství
+            let itemCounts = {};
+            userCart.forEach(item => {
+                if(itemCounts[item.id]) {
+                    itemCounts[item.id].quantity += 1;
+                } else {
+                    itemCounts[item.id] = { ...item, quantity: 1 };
+                }
+            });
+
+            // Vytvoření záznamu o objednávce
+            const newOrderRecord = {
+                id: Math.floor(100000 + Math.random() * 900000), // Generace náhodného ID
+                date: new Date().getTime(),
+                items: Object.values(itemCounts),
+                total: userCart.reduce((sum, item) => sum + item.price, 0)
+            };
+            
+            userOrderHistory.push(newOrderRecord);
+            localStorage.setItem('lab_user_orders_' + activeUser.phone, JSON.stringify(userOrderHistory));
+            
+            // Aktualizace vykreslení historie objednávek
+            renderOrderHistory();
+        }
+        
+        // Zavolání původního kódu (zobrazí se alert, košík se smaže a přesměruje se na dashboard)
+        originalProcessOrderCheckoutFunc(); 
+    };
+
+    /* =========================================================================
+       ZCELA NOVÁ SEKCE: LOGIKA DORUČOVACÍ ADRESY
+       ========================================================================= */
+
+    // Otevření okna ihned po registraci
+    function openAddressModal(userPhone) {
+        document.getElementById('addr-phone').value = userPhone;
+        document.getElementById('address-modal').style.display = 'flex';
+        
+        // Vyčistit případné předchozí vstupy
+        document.getElementById('addr-name').value = '';
+        document.getElementById('addr-street').value = '';
+        document.getElementById('addr-city').value = '';
+        document.getElementById('addr-zip').value = '';
+        document.getElementById('addr-country').value = 'Česká republika';
+        
+        checkAddressForm(); // Inicializovat stav tlačítka
+    }
+
+    // Validace povinných polí v modalu
+    function checkAddressForm() {
+        const name = document.getElementById('addr-name').value.trim();
+        const street = document.getElementById('addr-street').value.trim();
+        const city = document.getElementById('addr-city').value.trim();
+        const zip = document.getElementById('addr-zip').value.trim();
+        const btn = document.getElementById('btn-save-address');
+
+        if (name !== '' && street !== '' && city !== '' && zip !== '') {
+            btn.classList.remove('btn-disabled');
+            btn.removeAttribute('disabled');
+        } else {
+            btn.classList.add('btn-disabled');
+            btn.setAttribute('disabled', 'true');
+        }
+    }
+
+    // Propojení event listenerů pro validaci vstupů v reálném čase
+    ['addr-name', 'addr-street', 'addr-city', 'addr-zip'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('input', checkAddressForm);
+    });
+
+    // Uložení adresy do existujícího uživatelského záznamu
+    function saveUserAddress() {
+        const phone = document.getElementById('addr-phone').value;
+        const addressData = {
+            name: document.getElementById('addr-name').value.trim(),
+            street: document.getElementById('addr-street').value.trim(),
+            city: document.getElementById('addr-city').value.trim(),
+            zip: document.getElementById('addr-zip').value.trim(),
+            country: document.getElementById('addr-country').value.trim() || 'Česká republika'
+        };
+
+        let database = JSON.parse(localStorage.getItem('lab_system_users') || '{}');
+        if (database[phone]) {
+            database[phone].address = addressData;
+            localStorage.setItem('lab_system_users', JSON.stringify(database));
+        }
+
+        document.getElementById('address-modal').style.display = 'none';
+        
+        // Vizuální zpětná vazba pro přepnutí do sekce přihlášení
+        const box = document.getElementById('auth-msg-box');
+        box.textContent = "Adresa úspěšně uzamčena. Nyní se můžete přihlásit.";
+        box.style.display = 'block';
+        box.style.background = "rgba(0, 230, 118, 0.1)";
+        box.style.color = "var(--accent-color)";
+        box.style.borderColor = "var(--accent-color)";
+        setTimeout(() => {
+            box.style.display = 'none';
+            box.style.background = "rgba(255,76,76,0.1)"; // Reset zpět na styl erroru pro běžný login
+            box.style.color = "var(--danger)";
+            box.style.borderColor = "var(--danger)";
+        }, 5000);
+    }
+
+    // Hook na původní renderCartItems pro zobrazení read-only adresy
+    const originalRenderCartItemsForAddress = renderCartItems;
+    renderCartItems = function() {
+        originalRenderCartItemsForAddress(); // Vykreslí samotný košík
+
+        const addrContainer = document.getElementById('cart-address-container');
+        if (!addrContainer) return;
+
+        // Adresu vykreslíme pouze, pokud je košík aktivní (uživatel vybírá na checkout)
+        if (userCart.length > 0 && activeUser) {
+            let database = JSON.parse(localStorage.getItem('lab_system_users') || '{}');
+            let userRecord = database[activeUser.phone];
+            
+            if (userRecord && userRecord.address) {
+                const a = userRecord.address;
+                addrContainer.innerHTML = `
+                    <div style="background: var(--surface-light); border: 1px solid #333; border-radius: 16px; padding: 18px; margin-bottom: 25px;">
+                        <h4 style="color: var(--text-muted); text-transform: uppercase; font-size: 0.75em; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                            Doručovací adresa
+                            <span style="color: var(--danger); font-size: 0.9em; font-weight: bold;"><i class="fa-solid fa-lock"></i> Nelze změnit</span>
+                        </h4>
+                        <div style="color: white; font-size: 0.95em; line-height: 1.5;">
+                            <strong style="font-size: 1.1em; display: inline-block; margin-bottom: 4px;">${a.name}</strong><br>
+                            ${a.street}<br>
+                            ${a.zip} ${a.city}<br>
+                            ${a.country}
+                        </div>
+                    </div>
+                `;
+                addrContainer.style.display = 'block';
+            } else {
+                addrContainer.style.display = 'none';
+            }
+        } else {
+            addrContainer.style.display = 'none';
+        }
+    };
+</script>
+
+</body>
+</html>
