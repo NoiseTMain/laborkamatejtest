@@ -434,6 +434,18 @@
         .btn-paypal:hover {
             background: #005ea6;
         }
+
+        /* Styl pro nové Revolut tlačítko */
+        .btn-revolut {
+            background: #000000;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            margin-top: 10px;
+            border: 1px solid #333;
+        }
+        .btn-revolut:hover {
+            background: #1a1a1a;
+        }
     </style>
 </head>
 <body>
@@ -998,8 +1010,26 @@
             // Otevřít PayPal v novém okně
             window.open('https://www.paypal.me/AdamHorvath963', '_blank');
             
-            // Překreslit historii objednávek pro aktualizaci tlačítka
-            renderOrderHistory();
+            // Překreslit historii objednávek pro aktualizaci tlačítka po malé prodlevě
+            setTimeout(renderOrderHistory, 500);
+        }
+    }
+
+    // Funkce pro obsluhu Revolut tlačítka
+    function handleRevolutPayment(orderId) {
+        // Najít objednávku
+        const orderIndex = userOrderHistory.findIndex(o => o.id === orderId);
+        if (orderIndex !== -1 && !userOrderHistory[orderIndex].paid) {
+            // Nastavit jako zaplaceno
+            userOrderHistory[orderIndex].paid = true;
+            // Uložit do storage
+            localStorage.setItem('lab_user_orders_' + activeUser.phone, JSON.stringify(userOrderHistory));
+            
+            // Otevřít Revolut v novém okně
+            window.open('https://revolut.me/cbhrv', '_blank');
+            
+            // Překreslit historii objednávek pro aktualizaci tlačítka po malé prodlevě
+            setTimeout(renderOrderHistory, 500);
         }
     }
 
@@ -1036,7 +1066,7 @@
                 `;
             });
 
-            // Generování kódu pro PayPal tlačítko podle stavu
+            // Generování kódu pro platební tlačítka podle stavu
             let payButtonHtml = '';
             if (order.paid) {
                 payButtonHtml = `
@@ -1046,8 +1076,11 @@
                 `;
             } else {
                 payButtonHtml = `
-                    <button class="btn-action btn-paypal" style="margin-top: 15px; width: 100%;" onclick="handlePayPalPayment(${order.id})">
+                    <button class="btn-action btn-paypal" style="margin-top: 15px; width: 100%;" onclick="this.disabled=true; this.classList.add('btn-disabled'); handlePayPalPayment(${order.id})">
                         <i class="fa-brands fa-paypal"></i> ZAPLATIT PŘES PAYPAL
+                    </button>
+                    <button class="btn-action btn-revolut" style="margin-top: 10px; width: 100%;" onclick="this.disabled=true; this.classList.add('btn-disabled'); handleRevolutPayment(${order.id})">
+                        <i class="fa-solid fa-wallet"></i> ZAPLATIT PŘES REVOLUT
                     </button>
                 `;
             }
@@ -1081,8 +1114,8 @@
                 <h3 style="font-size: 0.85em; margin-bottom: 10px; color: var(--text-muted);">3. INFORMACE K PLATBĚ</h3>
                 <div style="background: var(--surface-light); padding: 15px; border-radius: 12px; border: 1px solid #333; font-size: 0.85em; line-height: 1.6;">
                     <p style="margin-bottom: 10px; color: var(--text-main);">Platba probíhá převodem přes zástupce v ČR.</p>
-                    <p><strong>Metoda:</strong> PayPal (F&F platba)</p>
-                    <p><strong>E-mail pro platbu:</strong> <span style="color: var(--primary-color);">lbrm8169@gmail.com</span></p>
+                    <p><strong>Metoda:</strong> PayPal (F&F platba) nebo Revolut</p>
+                    <p><strong>E-mail pro platbu (PayPal):</strong> <span style="color: var(--primary-color);">lbrm8169@gmail.com</span></p>
                     <p style="margin-top: 12px; color: var(--text-muted); font-size: 0.9em; padding-top: 10px; border-top: 1px dashed #444;">
                         <em>Po provedení úhrady prosím zašlete na výše uvedený e-mail potvrzení o platbě. To umožní okamžité spárování a urychlí expedici.</em>
                     </p>
